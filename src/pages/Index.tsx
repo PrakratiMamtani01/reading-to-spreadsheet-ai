@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataEntryForm } from "@/components/DataEntryForm";
 import { DataManager } from "@/components/DataManager";
-import { FileText, Database, Download } from "lucide-react";
+import { Recycle, Database, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export interface DataReading {
@@ -13,18 +13,18 @@ export interface DataReading {
   timestamp: string;
   location?: string;
   operator?: string;
-  readings: { [key: string]: string | number };
+  readings: { [key: string]: string | number | any };
 }
 
 const Index = () => {
   const [dataReadings, setDataReadings] = useState<DataReading[]>([]);
-  const [fields, setFields] = useState<string[]>(["Temperature", "Pressure", "Flow Rate"]);
+  const [fields, setFields] = useState<string[]>(["Sample Number", "Vehicle Number", "Source District"]);
   const { toast } = useToast();
 
   // Load data from localStorage on component mount
   useEffect(() => {
-    const savedData = localStorage.getItem('dataReadings');
-    const savedFields = localStorage.getItem('dataFields');
+    const savedData = localStorage.getItem('wasteAuditData');
+    const savedFields = localStorage.getItem('wasteAuditFields');
     
     if (savedData) {
       setDataReadings(JSON.parse(savedData));
@@ -36,12 +36,12 @@ const Index = () => {
 
   // Save data to localStorage whenever dataReadings change
   useEffect(() => {
-    localStorage.setItem('dataReadings', JSON.stringify(dataReadings));
+    localStorage.setItem('wasteAuditData', JSON.stringify(dataReadings));
   }, [dataReadings]);
 
   // Save fields to localStorage whenever fields change
   useEffect(() => {
-    localStorage.setItem('dataFields', JSON.stringify(fields));
+    localStorage.setItem('wasteAuditFields', JSON.stringify(fields));
   }, [fields]);
 
   const addDataReading = (reading: Omit<DataReading, 'id' | 'timestamp'>) => {
@@ -54,8 +54,8 @@ const Index = () => {
     setDataReadings(prev => [newReading, ...prev]);
     
     toast({
-      title: "Reading Added",
-      description: "Data reading has been successfully recorded.",
+      title: "Waste Audit Recorded",
+      description: "Waste collection data has been successfully saved.",
     });
   };
 
@@ -63,8 +63,8 @@ const Index = () => {
     setDataReadings(prev => prev.filter(reading => reading.id !== id));
     
     toast({
-      title: "Reading Deleted",
-      description: "Data reading has been removed.",
+      title: "Record Deleted",
+      description: "Waste audit data has been removed.",
     });
   };
 
@@ -72,24 +72,36 @@ const Index = () => {
     if (dataReadings.length === 0) {
       toast({
         title: "No Data",
-        description: "No readings available to export.",
+        description: "No waste audit records available to export.",
         variant: "destructive",
       });
       return;
     }
 
-    // Create CSV headers
-    const headers = ['Timestamp', 'Location', 'Operator', ...fields];
+    // Create comprehensive CSV headers for waste audit data
+    const headers = [
+      'Timestamp', 'Sample Number', 'Date & Time', 'Vehicle Number', 'Source District',
+      'Waste Type', 'Sample Weight', 'Vehicle Type', 'Total Weight', 'Remarks'
+    ];
     
     // Create CSV rows
     const csvContent = [
       headers.join(','),
-      ...dataReadings.map(reading => [
-        new Date(reading.timestamp).toLocaleString(),
-        reading.location || '',
-        reading.operator || '',
-        ...fields.map(field => reading.readings[field] || '')
-      ].join(','))
+      ...dataReadings.map(reading => {
+        const data = reading.readings;
+        return [
+          new Date(reading.timestamp).toLocaleString(),
+          data.sampleNumber || '',
+          data.dateTime || '',
+          data.vehicleNumber || '',
+          data.sourceDistrict || '',
+          data.wasteType || '',
+          data.sampleWeight || '',
+          data.vehicleType || '',
+          data.totalWeight || '',
+          `"${data.remarks || ''}"`
+        ].join(',');
+      })
     ].join('\n');
 
     // Download CSV file
@@ -97,45 +109,45 @@ const Index = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `data-readings-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `waste-audit-data-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
 
     toast({
       title: "Export Complete",
-      description: "Data has been exported to CSV file.",
+      description: "Waste audit data has been exported to CSV file.",
     });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Digital Data Entry System
+            Waste Collection Data Entry System
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Streamline your manual data collection process with this modern, efficient digital solution
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Digital waste audit and collection data management system for efficient environmental monitoring
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader className="text-center">
-              <FileText className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-              <CardTitle className="text-lg">Quick Entry</CardTitle>
+              <Recycle className="w-12 h-12 text-green-600 mx-auto mb-2" />
+              <CardTitle className="text-lg">Waste Audit</CardTitle>
               <CardDescription>
-                Fast and accurate data input with real-time validation
+                Comprehensive waste categorization and weight measurement tracking
               </CardDescription>
             </CardHeader>
           </Card>
 
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader className="text-center">
-              <Database className="w-12 h-12 text-green-600 mx-auto mb-2" />
+              <Database className="w-12 h-12 text-blue-600 mx-auto mb-2" />
               <CardTitle className="text-lg">Data Management</CardTitle>
               <CardDescription>
-                View, edit, and organize all your readings in one place
+                View, analyze, and manage all waste collection records
               </CardDescription>
             </CardHeader>
           </Card>
@@ -143,9 +155,9 @@ const Index = () => {
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader className="text-center">
               <Download className="w-12 h-12 text-purple-600 mx-auto mb-2" />
-              <CardTitle className="text-lg">Excel Export</CardTitle>
+              <CardTitle className="text-lg">Export Reports</CardTitle>
               <CardDescription>
-                Export your data to CSV format for Excel compatibility
+                Generate CSV reports for environmental compliance and analysis
               </CardDescription>
             </CardHeader>
           </Card>
@@ -155,14 +167,14 @@ const Index = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-2xl">Data Collection Center</CardTitle>
+                <CardTitle className="text-2xl">Waste Audit Data Center</CardTitle>
                 <CardDescription>
-                  {dataReadings.length} readings recorded
+                  {dataReadings.length} waste collection records
                 </CardDescription>
               </div>
               <Button 
                 onClick={exportToCSV}
-                className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
                 disabled={dataReadings.length === 0}
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -174,10 +186,10 @@ const Index = () => {
             <Tabs defaultValue="entry" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="entry" className="text-lg py-3">
-                  Data Entry
+                  Waste Audit Entry
                 </TabsTrigger>
                 <TabsTrigger value="manage" className="text-lg py-3">
-                  Manage Data ({dataReadings.length})
+                  Manage Records ({dataReadings.length})
                 </TabsTrigger>
               </TabsList>
               
