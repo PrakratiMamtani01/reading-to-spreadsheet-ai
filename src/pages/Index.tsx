@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataEntryForm } from "@/components/DataEntryForm";
 import { DataManager } from "@/components/DataManager";
-import { Recycle, Database, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export interface DataReading {
@@ -120,80 +119,40 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Waste Collection Data Entry System
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Digital waste audit and collection data management system for efficient environmental monitoring
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="text-center">
-              <Recycle className="w-12 h-12 text-green-600 mx-auto mb-2" />
-              <CardTitle className="text-lg">Waste Audit</CardTitle>
-              <CardDescription>
-                Comprehensive waste categorization and weight measurement tracking
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="text-center">
-              <Database className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-              <CardTitle className="text-lg">Data Management</CardTitle>
-              <CardDescription>
-                View, analyze, and manage all waste collection records
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="text-center">
-              <Download className="w-12 h-12 text-purple-600 mx-auto mb-2" />
-              <CardTitle className="text-lg">Export Reports</CardTitle>
-              <CardDescription>
-                Generate CSV reports for environmental compliance and analysis
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-2 md:p-4">
+      <div className="max-w-4xl mx-auto">
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-          <CardHeader>
-            <div className="flex justify-between items-center">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <CardTitle className="text-2xl">Waste Audit Data Center</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl sm:text-2xl">Waste Audit Data Center</CardTitle>
+                <CardDescription className="text-sm">
                   {dataReadings.length} waste collection records
                 </CardDescription>
               </div>
               <Button 
                 onClick={exportToCSV}
-                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 w-full sm:w-auto"
                 disabled={dataReadings.length === 0}
+                size="sm"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2 sm:p-6">
             <Tabs defaultValue="entry" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="entry" className="text-lg py-3">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="entry" className="text-sm sm:text-base py-2">
                   Waste Audit Entry
                 </TabsTrigger>
-                <TabsTrigger value="manage" className="text-lg py-3">
-                  Manage Records ({dataReadings.length})
+                <TabsTrigger value="manage" className="text-sm sm:text-base py-2">
+                  Records ({dataReadings.length})
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="entry" className="space-y-6">
+              <TabsContent value="entry" className="space-y-4">
                 <DataEntryForm 
                   fields={fields}
                   setFields={setFields}
@@ -201,7 +160,7 @@ const Index = () => {
                 />
               </TabsContent>
               
-              <TabsContent value="manage" className="space-y-6">
+              <TabsContent value="manage" className="space-y-4">
                 <DataManager 
                   dataReadings={dataReadings}
                   fields={fields}

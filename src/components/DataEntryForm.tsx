@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, Calculator, Trash2 } from "lucide-react";
+import { Save, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DataReading } from "@/pages/Index";
 
@@ -36,7 +35,8 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
   const [sampleWeight, setSampleWeight] = useState('');
   const [vehicleType, setVehicleType] = useState('');
 
-  // Bin measurements (7 bins + average)
+  // Dynamic bin count (start with 7 bins)
+  const [binCount, setBinCount] = useState(7);
   const [binWeights, setBinWeights] = useState<number[]>(new Array(7).fill(0));
   const [binVolumes, setBinVolumes] = useState<number[]>(new Array(7).fill(240));
   const [sortingWeights, setSortingWeights] = useState<number[]>(new Array(7).fill(0));
@@ -102,6 +102,21 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
   const [remarks, setRemarks] = useState('');
   const { toast } = useToast();
+
+  const addBin = () => {
+    setBinCount(prev => prev + 1);
+    setBinWeights(prev => [...prev, 0]);
+    setBinVolumes(prev => [...prev, 240]);
+    setSortingWeights(prev => [...prev, 0]);
+  };
+
+  const removeBin = (index: number) => {
+    if (binCount <= 1) return;
+    setBinCount(prev => prev - 1);
+    setBinWeights(prev => prev.filter((_, i) => i !== index));
+    setBinVolumes(prev => prev.filter((_, i) => i !== index));
+    setSortingWeights(prev => prev.filter((_, i) => i !== index));
+  };
 
   const calculateNetWeight = (emptyBin: number, weightWithWaste: number) => {
     return Math.max(0, weightWithWaste - emptyBin);
@@ -194,90 +209,99 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     setSourceDistrict('');
     setSampleWeight('');
     setVehicleType('');
+    setBinCount(7);
     setBinWeights(new Array(7).fill(0));
+    setBinVolumes(new Array(7).fill(240));
     setSortingWeights(new Array(7).fill(0));
     setWasteCategories(prev => prev.map(cat => ({ ...cat, emptyBin: 0, weightWithWaste: 0 })));
     setRemarks('');
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl text-center">Waste Collection Data Entry</CardTitle>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg text-center">Waste Collection Data Entry</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <CardContent className="p-3 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-blue-600">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <h3 className="text-base font-semibold text-blue-600">Basic Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="sampleNumber">Sample Number *</Label>
+                  <Label htmlFor="sampleNumber" className="text-sm">Sample Number *</Label>
                   <Input
                     id="sampleNumber"
                     value={sampleNumber}
                     onChange={(e) => setSampleNumber(e.target.value)}
                     placeholder="Enter sample number"
                     required
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dateTime">Date & Time *</Label>
+                  <Label htmlFor="dateTime" className="text-sm">Date & Time *</Label>
                   <Input
                     id="dateTime"
                     type="datetime-local"
                     value={dateTime}
                     onChange={(e) => setDateTime(e.target.value)}
                     required
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vehicleNumber">Vehicle Number</Label>
+                  <Label htmlFor="vehicleNumber" className="text-sm">Vehicle Number</Label>
                   <Input
                     id="vehicleNumber"
                     value={vehicleNumber}
                     onChange={(e) => setVehicleNumber(e.target.value)}
                     placeholder="Sampling vehicle"
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="manifestId">Manifest ID</Label>
+                  <Label htmlFor="manifestId" className="text-sm">Manifest ID</Label>
                   <Input
                     id="manifestId"
                     value={manifestId}
                     onChange={(e) => setManifestId(e.target.value)}
+                    className="h-10"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="producerName">Producer's Name - ESP</Label>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="producerName" className="text-sm">Producer's Name - ESP</Label>
                   <Input
                     id="producerName"
                     value={producerName}
                     onChange={(e) => setProducerName(e.target.value)}
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sourceDistrict">Source District *</Label>
+                  <Label htmlFor="sourceDistrict" className="text-sm">Source District *</Label>
                   <Input
                     id="sourceDistrict"
                     value={sourceDistrict}
                     onChange={(e) => setSourceDistrict(e.target.value)}
                     placeholder="District name"
                     required
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="wasteType">Type of Waste</Label>
+                  <Label htmlFor="wasteType" className="text-sm">Type of Waste</Label>
                   <Input
                     id="wasteType"
                     value={wasteType}
                     onChange={(e) => setWasteType(e.target.value)}
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sampleWeight">Sample Weight (kg)</Label>
+                  <Label htmlFor="sampleWeight" className="text-sm">Sample Weight (kg)</Label>
                   <Input
                     id="sampleWeight"
                     type="number"
@@ -285,15 +309,17 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                     value={sampleWeight}
                     onChange={(e) => setSampleWeight(e.target.value)}
                     placeholder="0.00"
+                    className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vehicleType">Vehicle Type</Label>
+                  <Label htmlFor="vehicleType" className="text-sm">Vehicle Type</Label>
                   <Input
                     id="vehicleType"
                     value={vehicleType}
                     onChange={(e) => setVehicleType(e.target.value)}
                     placeholder="Type of vehicle"
+                    className="h-10"
                   />
                 </div>
               </div>
@@ -303,202 +329,250 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
             {/* Bin Measurements */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-green-600">Bin Measurements</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-semibold text-green-600">Bin Measurements</h3>
+                <Button 
+                  type="button"
+                  onClick={addBin}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Bin
+                </Button>
+              </div>
               
               {/* Bin Weights */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">Bin Weight (kg)</Label>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                <Label className="text-sm font-medium">Bin Weight (kg)</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {binWeights.map((weight, index) => (
                     <div key={index} className="space-y-1">
-                      <Label className="text-xs">{index < 7 ? `Bin ${index + 1}` : 'Avg'}</Label>
+                      <div className="flex justify-between items-center">
+                        <Label className="text-xs">Bin {index + 1}</Label>
+                        {index >= 7 && (
+                          <Button
+                            type="button"
+                            onClick={() => removeBin(index)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-4 w-4 p-0 text-red-500"
+                          >
+                            ×
+                          </Button>
+                        )}
+                      </div>
                       <Input
                         type="number"
                         step="0.01"
-                        value={index < 7 ? weight || '' : getBinAverage(binWeights)}
+                        value={weight || ''}
                         onChange={(e) => {
-                          if (index < 7) {
-                            const newWeights = [...binWeights];
-                            newWeights[index] = parseFloat(e.target.value) || 0;
-                            setBinWeights(newWeights);
-                          }
+                          const newWeights = [...binWeights];
+                          newWeights[index] = parseFloat(e.target.value) || 0;
+                          setBinWeights(newWeights);
                         }}
-                        disabled={index >= 7}
-                        className={index >= 7 ? 'bg-gray-100' : ''}
                         placeholder="0.00"
+                        className="h-8 text-sm"
                       />
                     </div>
                   ))}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Avg</Label>
+                    <Input
+                      type="text"
+                      value={getBinAverage(binWeights)}
+                      disabled
+                      className="bg-gray-100 h-8 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Bin Volumes */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">Bin Volume (m³)</Label>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                <Label className="text-sm font-medium">Bin Volume (m³)</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {binVolumes.map((volume, index) => (
                     <div key={index} className="space-y-1">
-                      <Label className="text-xs">{index < 7 ? `Bin ${index + 1}` : 'Avg'}</Label>
+                      <Label className="text-xs">Bin {index + 1}</Label>
                       <Input
                         type="number"
                         step="0.01"
-                        value={index < 7 ? volume || '' : getBinAverage(binVolumes)}
+                        value={volume || ''}
                         onChange={(e) => {
-                          if (index < 7) {
-                            const newVolumes = [...binVolumes];
-                            newVolumes[index] = parseFloat(e.target.value) || 240;
-                            setBinVolumes(newVolumes);
-                          }
+                          const newVolumes = [...binVolumes];
+                          newVolumes[index] = parseFloat(e.target.value) || 240;
+                          setBinVolumes(newVolumes);
                         }}
-                        disabled={index >= 7}
-                        className={index >= 7 ? 'bg-gray-100' : ''}
                         placeholder="240.00"
+                        className="h-8 text-sm"
                       />
                     </div>
                   ))}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Avg</Label>
+                    <Input
+                      type="text"
+                      value={getBinAverage(binVolumes)}
+                      disabled
+                      className="bg-gray-100 h-8 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Bulk Density */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">Bulk Density (kg/m³)</Label>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                <Label className="text-sm font-medium">Bulk Density (kg/m³)</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {binWeights.map((weight, index) => (
                     <div key={index} className="space-y-1">
-                      <Label className="text-xs">{index < 7 ? `Bin ${index + 1}` : 'Avg'}</Label>
+                      <Label className="text-xs">Bin {index + 1}</Label>
                       <Input
                         type="text"
-                        value={index < 7 ? getBulkDensity(weight, binVolumes[index]) : getBinAverage(binWeights.map((w, i) => parseFloat(getBulkDensity(w, binVolumes[i]))))}
+                        value={getBulkDensity(weight, binVolumes[index])}
                         disabled
-                        className="bg-gray-100"
+                        className="bg-gray-100 h-8 text-sm"
                       />
                     </div>
                   ))}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Avg</Label>
+                    <Input
+                      type="text"
+                      value={getBinAverage(binWeights.map((w, i) => parseFloat(getBulkDensity(w, binVolumes[i]))))}
+                      disabled
+                      className="bg-gray-100 h-8 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Sorting Sample Weight */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">Sorting Sample Weight</Label>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                <Label className="text-sm font-medium">Sorting Sample Weight</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {sortingWeights.map((weight, index) => (
                     <div key={index} className="space-y-1">
-                      <Label className="text-xs">{index < 7 ? `${index + 1}` : 'Total'}</Label>
+                      <Label className="text-xs">{index + 1}</Label>
                       <Input
                         type="number"
                         step="0.01"
-                        value={index < 7 ? weight || '' : sortingWeights.reduce((a, b) => a + b, 0)}
+                        value={weight || ''}
                         onChange={(e) => {
-                          if (index < 7) {
-                            const newWeights = [...sortingWeights];
-                            newWeights[index] = parseFloat(e.target.value) || 0;
-                            setSortingWeights(newWeights);
-                          }
+                          const newWeights = [...sortingWeights];
+                          newWeights[index] = parseFloat(e.target.value) || 0;
+                          setSortingWeights(newWeights);
                         }}
-                        disabled={index >= 7}
-                        className={index >= 7 ? 'bg-gray-100' : ''}
                         placeholder="0.00"
+                        className="h-8 text-sm"
                       />
                     </div>
                   ))}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Total</Label>
+                    <Input
+                      type="text"
+                      value={sortingWeights.reduce((a, b) => a + b, 0)}
+                      disabled
+                      className="bg-gray-100 h-8 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             <Separator />
 
-            {/* Waste Category Breakdown */}
+            {/* Waste Category Breakdown - Mobile Optimized */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-purple-600">Waste Category Breakdown</h3>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-base font-semibold text-purple-600">Waste Category Breakdown</h3>
                 <div className="text-sm text-gray-600">
                   Total Weight: <span className="font-bold text-purple-600">{getTotalWeight().toFixed(2)} kg</span>
                 </div>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 p-2 text-left">Primary Category</th>
-                      <th className="border border-gray-300 p-2 text-left">Secondary Category</th>
-                      <th className="border border-gray-300 p-2 text-center">Empty Bin</th>
-                      <th className="border border-gray-300 p-2 text-center">Weight with Waste</th>
-                      <th className="border border-gray-300 p-2 text-center">Net Weight</th>
-                      <th className="border border-gray-300 p-2 text-center">Percentage</th>
-                      <th className="border border-gray-300 p-2 text-center">Bin #</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {wasteCategories.map((category, index) => {
-                      const netWeight = calculateNetWeight(category.emptyBin, category.weightWithWaste);
-                      const percentage = calculatePercentage(netWeight, getTotalWeight());
-                      
-                      return (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-medium">{category.primary}</td>
-                          <td className="border border-gray-300 p-2">{category.secondary}</td>
-                          <td className="border border-gray-300 p-2">
+              <div className="space-y-3">
+                {wasteCategories.map((category, index) => {
+                  const netWeight = calculateNetWeight(category.emptyBin, category.weightWithWaste);
+                  const percentage = calculatePercentage(netWeight, getTotalWeight());
+                  
+                  return (
+                    <Card key={index} className="p-3">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm">{category.primary}</h4>
+                            <p className="text-xs text-gray-600">{category.secondary}</p>
+                            {category.binNumber && (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                Bin #{category.binNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">{netWeight.toFixed(2)} kg</div>
+                            <div className="text-xs text-gray-500">{percentage}%</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Empty Bin</Label>
                             <Input
                               type="number"
                               step="0.01"
                               value={category.emptyBin || ''}
                               onChange={(e) => updateWasteCategory(index, 'emptyBin', e.target.value)}
-                              className="w-20 text-center"
+                              className="h-8 text-sm"
                               placeholder="0.00"
                             />
-                          </td>
-                          <td className="border border-gray-300 p-2">
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Weight with Waste</Label>
                             <Input
                               type="number"
                               step="0.01"
                               value={category.weightWithWaste || ''}
                               onChange={(e) => updateWasteCategory(index, 'weightWithWaste', e.target.value)}
-                              className="w-20 text-center"
+                              className="h-8 text-sm"
                               placeholder="0.00"
                             />
-                          </td>
-                          <td className="border border-gray-300 p-2 text-center font-medium">
-                            {netWeight.toFixed(2)}
-                          </td>
-                          <td className="border border-gray-300 p-2 text-center">
-                            {percentage}%
-                          </td>
-                          <td className="border border-gray-300 p-2 text-center">
-                            {category.binNumber || '—'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 
             <Separator />
 
             {/* Remarks */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-orange-600">Additional Information</h3>
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-orange-600">Additional Information</h3>
               <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
+                <Label htmlFor="remarks" className="text-sm">Remarks</Label>
                 <Textarea
                   id="remarks"
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="Enter any additional observations or notes..."
                   rows={3}
+                  className="text-sm"
                 />
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between pt-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
               <Button 
                 type="button"
                 onClick={clearForm}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Trash2 className="w-4 h-4" />
                 Clear Form
@@ -506,8 +580,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
               
               <Button 
                 type="submit"
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 flex items-center gap-2"
+                className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Save className="w-4 h-4" />
                 Save Waste Audit Data
