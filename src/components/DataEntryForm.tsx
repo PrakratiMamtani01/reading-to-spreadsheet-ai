@@ -147,10 +147,22 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     setWasteCategories(newCategories);
   };
 
+  // New calculation functions for sampling/moisture loss
+  const getSortingTotal = () => {
+    return sortingWeights.reduce((a, b) => a + b, 0);
+  };
+
+  const getSamplingMoistureLoss = () => {
+    return getSortingTotal() - getTotalWeight();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const totalWeight = getTotalWeight();
+    const sortingTotal = getSortingTotal();
+    const samplingMoistureLoss = getSamplingMoistureLoss();
+    
     const processedData = {
       // Basic info
       sampleNumber,
@@ -174,7 +186,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
       
       // Sorting weights
       sortingWeights: sortingWeights.map(w => w || 0),
-      sortingTotal: sortingWeights.reduce((a, b) => a + b, 0),
+      sortingTotal,
       
       // Waste breakdown
       wasteBreakdown: wasteCategories.map(category => ({
@@ -187,6 +199,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
       })),
       
       totalWeight,
+      samplingMoistureLoss,
       remarks
     };
 
@@ -474,7 +487,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                     <Label className="text-xs">Total</Label>
                     <Input
                       type="text"
-                      value={sortingWeights.reduce((a, b) => a + b, 0)}
+                      value={getSortingTotal().toFixed(2)}
                       disabled
                       className="bg-gray-100 h-8 text-sm"
                     />
@@ -485,7 +498,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
             <Separator />
 
-            {/* Waste Category Breakdown - Mobile Optimized */}
+            {/* Waste Category Breakdown - Updated without bin number tags */}
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <h3 className="text-base font-semibold text-purple-600">Waste Category Breakdown</h3>
@@ -506,11 +519,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                           <div className="flex-1">
                             <h4 className="font-medium text-sm">{category.primary}</h4>
                             <p className="text-xs text-gray-600">{category.secondary}</p>
-                            {category.binNumber && (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                Bin #{category.binNumber}
-                              </span>
-                            )}
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-medium">{netWeight.toFixed(2)} kg</div>
@@ -546,6 +554,29 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                   );
                 })}
               </div>
+            </div>
+
+            <Separator />
+
+            {/* New Sampling/Moisture Loss Section */}
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold text-orange-600">Sampling/Moisture Loss</h3>
+              <Card className="p-4 bg-orange-50 border-orange-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-600 mb-1">Sorting Sample Total</div>
+                    <div className="font-bold text-lg text-blue-600">{getSortingTotal().toFixed(2)} kg</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-600 mb-1">Waste Category Total</div>
+                    <div className="font-bold text-lg text-purple-600">{getTotalWeight().toFixed(2)} kg</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-600 mb-1">Sampling/Moisture Loss</div>
+                    <div className="font-bold text-lg text-orange-600">{getSamplingMoistureLoss().toFixed(2)} kg</div>
+                  </div>
+                </div>
+              </Card>
             </div>
 
             <Separator />
