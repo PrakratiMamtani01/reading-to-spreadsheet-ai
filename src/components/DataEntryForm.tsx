@@ -156,12 +156,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     return getSortingTotal() - getTotalWeight();
   };
 
+  const getPercentageLoss = () => {
+    const sortingTotal = getSortingTotal();
+    const loss = getSamplingMoistureLoss();
+    return sortingTotal > 0 ? (loss / sortingTotal * 100).toFixed(2) : '0.00';
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const totalWeight = getTotalWeight();
     const sortingTotal = getSortingTotal();
     const samplingMoistureLoss = getSamplingMoistureLoss();
+    const percentageLoss = getPercentageLoss();
     
     const processedData = {
       // Basic info
@@ -200,6 +207,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
       
       totalWeight,
       samplingMoistureLoss,
+      percentageLoss,
       remarks
     };
 
@@ -558,22 +566,33 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
             <Separator />
 
-            {/* New Sampling/Moisture Loss Section */}
+            {/* Updated Sampling/Moisture Loss Section */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold text-orange-600">Sampling/Moisture Loss</h3>
               <Card className="p-4 bg-orange-50 border-orange-200">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-xs text-gray-600 mb-1">Sorting Sample Total</div>
-                    <div className="font-bold text-lg text-blue-600">{getSortingTotal().toFixed(2)} kg</div>
+                <div className="space-y-4">
+                  {/* First Row: Totals */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-600 mb-1">Sorting Sample Total</div>
+                      <div className="font-bold text-lg text-blue-600">{getSortingTotal().toFixed(2)} kg</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-600 mb-1">Waste Category Total</div>
+                      <div className="font-bold text-lg text-purple-600">{getTotalWeight().toFixed(2)} kg</div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-600 mb-1">Waste Category Total</div>
-                    <div className="font-bold text-lg text-purple-600">{getTotalWeight().toFixed(2)} kg</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-600 mb-1">Sampling/Moisture Loss</div>
-                    <div className="font-bold text-lg text-orange-600">{getSamplingMoistureLoss().toFixed(2)} kg</div>
+                  
+                  {/* Second Row: Loss and Percentage */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-600 mb-1">Sampling/Moisture Loss</div>
+                      <div className="font-bold text-lg text-orange-600">{getSamplingMoistureLoss().toFixed(2)} kg</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-600 mb-1">Percentage Loss</div>
+                      <div className="font-bold text-lg text-red-600">{getPercentageLoss()}%</div>
+                    </div>
                   </div>
                 </div>
               </Card>
