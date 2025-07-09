@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,139 +77,129 @@ const Index = () => {
       return;
     }
 
-    // Create comprehensive CSV headers for all waste audit data
-    const basicHeaders = [
-      'Timestamp', 'Sample Number', 'Date & Time', 'Vehicle Number', 'Manifest ID',
-      'Producer Name', 'Source District', 'Waste Type', 'Sample Weight (kg)', 'Vehicle Type'
-    ];
-
-    // Bin measurement headers (dynamic based on bin count)
-    const maxBins = Math.max(...dataReadings.map(r => r.readings.binWeights?.length || 7));
-    const binHeaders = [];
-    for (let i = 1; i <= maxBins; i++) {
-      binHeaders.push(`Bin ${i} Weight (kg)`, `Bin ${i} Volume (m³)`, `Bin ${i} Bulk Density (kg/m³)`);
-    }
-    binHeaders.push('Avg Bin Weight', 'Avg Bin Volume', 'Avg Bulk Density');
-
-    // Sorting sample headers
-    const sortingHeaders = [];
-    for (let i = 1; i <= maxBins; i++) {
-      sortingHeaders.push(`Sorting Sample ${i} (kg)`);
-    }
-    sortingHeaders.push('Sorting Sample Total (kg)');
-
-    // Waste category headers
-    const wasteCategories = [
-      'Paper - Mixed Paper', 'Paper - High-Grade Paper', 'Paper - Cardboard', 'Paper - Tissue Paper', 'Paper - Coated Paper',
-      'Plastics - PVC', 'Plastics - PET bottles', 'Plastics - HDPE bottles', 'Plastics - LDPE films', 'Plastics - PP containers',
-      'Plastics - Other plastic', 'Plastics - PS Styrofoam', 'Plastics - Single-use plastic',
-      'Metals - Ferrous', 'Metals - Non-Ferrous', 'Metals - Mixed',
-      'Glass - Clear', 'Glass - Colored', 'Glass - Specialty',
-      'Textiles - Reusable', 'Textiles - Non-Reusable',
-      'Rubbers - Tires', 'Rubbers - Products',
-      'Liquid Waste', 'Animal Waste - Domestic', 'Animal Waste - Dead animals',
-      'PPE - Masks/Gloves', 'WEEE - Electronics', 'Food Waste',
-      'Fines (<30cm)', 'Diapers', 'Wood Waste',
-      'Hazardous - Household', 'Hazardous - Medical',
-      'Aluminum - Cans', 'Aluminum - Foils', 'Aluminum - Other',
-      'Miscellaneous'
-    ];
-
-    const wasteCategoryHeaders = [];
-    wasteCategories.forEach(category => {
-      wasteCategoryHeaders.push(`${category} - Empty Bin (kg)`, `${category} - With Waste (kg)`, `${category} - Net Weight (kg)`, `${category} - Percentage (%)`);
+    // Create CSV content with proper formatting
+    const csvRows = [];
+    
+    // Basic Information Headers
+    csvRows.push('BASIC INFORMATION');
+    csvRows.push('Timestamp,Sample Number,Date & Time,Vehicle Number,Manifest ID,Producer Name,Source District,Waste Type,Sample Weight (kg),Vehicle Type');
+    
+    // Add basic information for each reading
+    dataReadings.forEach(reading => {
+      const data = reading.readings;
+      csvRows.push([
+        `"${new Date(reading.timestamp).toLocaleString()}"`,
+        `"${data.sampleNumber || ''}"`,
+        `"${data.dateTime || ''}"`,
+        `"${data.vehicleNumber || ''}"`,
+        `"${data.manifestId || ''}"`,
+        `"${data.producerName || ''}"`,
+        `"${data.sourceDistrict || ''}"`,
+        `"${data.wasteType || ''}"`,
+        data.sampleWeight || 0,
+        `"${data.vehicleType || ''}"`
+      ].join(','));
+    });
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Bin Measurements Section
+    csvRows.push('BIN MEASUREMENTS');
+    csvRows.push('Sample Number,Bin Number,Weight (kg),Volume (m³),Bulk Density (kg/m³)');
+    
+    dataReadings.forEach(reading => {
+      const data = reading.readings;
+      const binWeights = data.binWeights || [];
+      const binVolumes = data.binVolumes || [];
+      
+      binWeights.forEach((weight, index) => {
+        const volume = binVolumes[index] || 240;
+        const bulkDensity = volume > 0 ? (weight / volume).toFixed(2) : '0.00';
+        csvRows.push([
+          `"${data.sampleNumber || ''}"`,
+          index + 1,
+          weight || 0,
+          volume,
+          bulkDensity
+        ].join(','));
+      });
+    });
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Sorting Sample Weights
+    csvRows.push('SORTING SAMPLE WEIGHTS');
+    csvRows.push('Sample Number,Sample 1,Sample 2,Sample 3,Sample 4,Sample 5,Sample 6,Sample 7,Additional Samples...,Total');
+    
+    dataReadings.forEach(reading => {
+      const data = reading.readings;
+      const sortingWeights = data.sortingWeights || [];
+      const row = [`"${data.sampleNumber || ''}"`];
+      
+      // Add all sorting weights
+      sortingWeights.forEach(weight => {
+        row.push(weight || 0);
+      });
+      
+      // Add total
+      row.push(data.sortingTotal || 0);
+      csvRows.push(row.join(','));
+    });
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Waste Category Breakdown
+    csvRows.push('WASTE CATEGORY BREAKDOWN');
+    csvRows.push('Sample Number,Main Category,Sub Category,Empty Bin Weight (kg),Weight with Waste (kg),Net Weight (kg),Percentage (%)');
+    
+    dataReadings.forEach(reading => {
+      const data = reading.readings;
+      const wasteBreakdown = data.wasteBreakdown || [];
+      
+      wasteBreakdown.forEach(category => {
+        csvRows.push([
+          `"${data.sampleNumber || ''}"`,
+          `"${category.primary || ''}"`,
+          `"${category.secondary || ''}"`,
+          category.emptyBin || 0,
+          category.weightWithWaste || 0,
+          category.netWeight || 0,
+          category.percentage || '0.00'
+        ].join(','));
+      });
+    });
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Summary Information
+    csvRows.push('SUMMARY CALCULATIONS');
+    csvRows.push('Sample Number,Sorting Sample Total (kg),Waste Category Total (kg),Sampling/Moisture Loss (kg),Percentage Loss (%),Remarks');
+    
+    dataReadings.forEach(reading => {
+      const data = reading.readings;
+      csvRows.push([
+        `"${data.sampleNumber || ''}"`,
+        data.sortingTotal || 0,
+        data.totalWeight || 0,
+        data.samplingMoistureLoss || 0,
+        data.percentageLoss || '0.00',
+        `"${data.remarks || ''}"`
+      ].join(','));
     });
 
-    // Summary calculation headers
-    const summaryHeaders = [
-      'Total Waste Weight (kg)', 'Sampling/Moisture Loss (kg)', 'Percentage Loss (%)', 'Remarks'
-    ];
-
-    const headers = [...basicHeaders, ...binHeaders, ...sortingHeaders, ...wasteCategoryHeaders, ...summaryHeaders];
-    
-    // Create CSV rows
-    const csvContent = [
-      headers.join(','),
-      ...dataReadings.map(reading => {
-        const data = reading.readings;
-        const row = [];
-
-        // Basic information
-        row.push(
-          `"${new Date(reading.timestamp).toLocaleString()}"`,
-          `"${data.sampleNumber || ''}"`,
-          `"${data.dateTime || ''}"`,
-          `"${data.vehicleNumber || ''}"`,
-          `"${data.manifestId || ''}"`,
-          `"${data.producerName || ''}"`,
-          `"${data.sourceDistrict || ''}"`,
-          `"${data.wasteType || ''}"`,
-          data.sampleWeight || 0,
-          `"${data.vehicleType || ''}"`
-        );
-
-        // Bin measurements
-        const binWeights = data.binWeights || [];
-        const binVolumes = data.binVolumes || [];
-        for (let i = 0; i < maxBins; i++) {
-          const weight = binWeights[i] || 0;
-          const volume = binVolumes[i] || 240;
-          const bulkDensity = volume > 0 ? (weight / volume).toFixed(2) : '0.00';
-          row.push(weight, volume, bulkDensity);
-        }
-        row.push(
-          data.binAverages?.weight || '0.00',
-          data.binAverages?.volume || '0.00',
-          data.binAverages?.bulkDensity || '0.00'
-        );
-
-        // Sorting samples
-        const sortingWeights = data.sortingWeights || [];
-        for (let i = 0; i < maxBins; i++) {
-          row.push(sortingWeights[i] || 0);
-        }
-        row.push(data.sortingTotal || 0);
-
-        // Waste category breakdown
-        const wasteBreakdown = data.wasteBreakdown || [];
-        wasteCategories.forEach((_, index) => {
-          const categoryData = wasteBreakdown[index];
-          if (categoryData) {
-            row.push(
-              categoryData.emptyBin || 0,
-              categoryData.weightWithWaste || 0,
-              categoryData.netWeight || 0,
-              categoryData.percentage || '0.00'
-            );
-          } else {
-            row.push(0, 0, 0, '0.00');
-          }
-        });
-
-        // Summary calculations
-        row.push(
-          data.totalWeight || 0,
-          data.samplingMoistureLoss || 0,
-          data.percentageLoss || '0.00',
-          `"${data.remarks || ''}"`
-        );
-
-        return row.join(',');
-      })
-    ].join('\n');
-
-    // Download CSV file
+    // Create and download CSV file
+    const csvContent = csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `comprehensive-waste-audit-data-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `organized-waste-audit-data-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
 
     toast({
       title: "Export Complete",
-      description: "Comprehensive waste audit data has been exported to CSV file.",
+      description: "Organized waste audit data has been exported to CSV file.",
     });
   };
 

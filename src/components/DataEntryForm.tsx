@@ -100,6 +100,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     { primary: 'Miscellaneous', secondary: 'Other Miscellaneous Waste', emptyBin: 0, weightWithWaste: 0, binNumber: 32 },
   ]);
 
+  // New state for adding custom waste categories
+  const [newCategoryPrimary, setNewCategoryPrimary] = useState('');
+  const [newCategorySecondary, setNewCategorySecondary] = useState('');
+  const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
+
   const [remarks, setRemarks] = useState('');
   const { toast } = useToast();
 
@@ -160,6 +165,43 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     const sortingTotal = getSortingTotal();
     const loss = getSamplingMoistureLoss();
     return sortingTotal > 0 ? (loss / sortingTotal * 100).toFixed(2) : '0.00';
+  };
+
+  // New function to add custom waste category
+  const addCustomWasteCategory = () => {
+    if (!newCategoryPrimary.trim() || !newCategorySecondary.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both main category and sub category.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newCategory: WasteCategory = {
+      primary: newCategoryPrimary.trim(),
+      secondary: newCategorySecondary.trim(),
+      emptyBin: 0,
+      weightWithWaste: 0
+    };
+
+    setWasteCategories(prev => [...prev, newCategory]);
+    setNewCategoryPrimary('');
+    setNewCategorySecondary('');
+    setShowAddCategoryForm(false);
+
+    toast({
+      title: "Category Added",
+      description: `${newCategoryPrimary} - ${newCategorySecondary} has been added.`,
+    });
+  };
+
+  const removeWasteCategory = (index: number) => {
+    setWasteCategories(prev => prev.filter((_, i) => i !== index));
+    toast({
+      title: "Category Removed",
+      description: "Waste category has been removed.",
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -236,6 +278,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     setSortingWeights(new Array(7).fill(0));
     setWasteCategories(prev => prev.map(cat => ({ ...cat, emptyBin: 0, weightWithWaste: 0 })));
     setRemarks('');
+    setShowAddCategoryForm(false);
+    setNewCategoryPrimary('');
+    setNewCategorySecondary('');
   };
 
   return (
@@ -509,11 +554,70 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
             {/* Waste Category Breakdown - Updated without bin number tags */}
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <h3 className="text-base font-semibold text-purple-600">Waste Category Breakdown</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-base font-semibold text-purple-600">Waste Category Breakdown</h3>
+                  <Button 
+                    type="button"
+                    onClick={() => setShowAddCategoryForm(!showAddCategoryForm)}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add Category
+                  </Button>
+                </div>
                 <div className="text-sm text-gray-600">
                   Total Weight: <span className="font-bold text-purple-600">{getTotalWeight().toFixed(2)} kg</span>
                 </div>
               </div>
+
+              {/* Add Category Form */}
+              {showAddCategoryForm && (
+                <Card className="p-4 border-2 border-dashed border-purple-300 bg-purple-50">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-purple-700">Add New Waste Category</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Main Category</Label>
+                        <Input
+                          value={newCategoryPrimary}
+                          onChange={(e) => setNewCategoryPrimary(e.target.value)}
+                          placeholder="e.g., Paper, Plastic, Metal"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Sub Category</Label>
+                        <Input
+                          value={newCategorySecondary}
+                          onChange={(e) => setNewCategorySecondary(e.target.value)}
+                          placeholder="e.g., Mixed Paper, PET bottles"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={addCustomWasteCategory}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        Add Category
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => setShowAddCategoryForm(false)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
               
               <div className="space-y-3">
                 {wasteCategories.map((category, index) => {
@@ -528,9 +632,22 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                             <h4 className="font-medium text-sm">{category.primary}</h4>
                             <p className="text-xs text-gray-600">{category.secondary}</p>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{netWeight.toFixed(2)} kg</div>
-                            <div className="text-xs text-gray-500">{percentage}%</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <div className="text-sm font-medium">{netWeight.toFixed(2)} kg</div>
+                              <div className="text-xs text-gray-500">{percentage}%</div>
+                            </div>
+                            {index >= 32 && ( // Only show remove button for custom categories
+                              <Button
+                                type="button"
+                                onClick={() => removeWasteCategory(index)}
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-red-500 hover:bg-red-100"
+                              >
+                                ×
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
