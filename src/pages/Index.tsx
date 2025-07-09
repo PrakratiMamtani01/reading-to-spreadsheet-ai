@@ -105,7 +105,7 @@ const Index = () => {
     
     // Bin Measurements Section
     csvRows.push('BIN MEASUREMENTS');
-    csvRows.push('Sample Number,Bin Number,Weight (kg),Volume (m³),Bulk Density (kg/m³)');
+    csvRows.push('Bin Number,Weight (kg),Volume (m³),Bulk Density (kg/m³)');
     
     dataReadings.forEach(reading => {
       const data = reading.readings;
@@ -113,10 +113,9 @@ const Index = () => {
       const binVolumes = data.binVolumes || [];
       
       binWeights.forEach((weight, index) => {
-        const volume = binVolumes[index] || 240;
+        const volume = binVolumes[index] || 1;
         const bulkDensity = volume > 0 ? (weight / volume).toFixed(2) : '0.00';
         csvRows.push([
-          `"${data.sampleNumber || ''}"`,
           index + 1,
           weight || 0,
           volume,
@@ -129,12 +128,12 @@ const Index = () => {
     
     // Sorting Sample Weights
     csvRows.push('SORTING SAMPLE WEIGHTS');
-    csvRows.push('Sample Number,Sample 1,Sample 2,Sample 3,Sample 4,Sample 5,Sample 6,Sample 7,Additional Samples...,Total');
+    csvRows.push('Sample 1,Sample 2,Sample 3,Sample 4,Sample 5,Sample 6,Sample 7,Additional Samples...,Total');
     
     dataReadings.forEach(reading => {
       const data = reading.readings;
       const sortingWeights = data.sortingWeights || [];
-      const row = [`"${data.sampleNumber || ''}"`];
+      const row = [];
       
       // Add all sorting weights
       sortingWeights.forEach(weight => {
@@ -150,7 +149,7 @@ const Index = () => {
     
     // Waste Category Breakdown
     csvRows.push('WASTE CATEGORY BREAKDOWN');
-    csvRows.push('Sample Number,Main Category,Sub Category,Empty Bin Weight (kg),Weight with Waste (kg),Net Weight (kg),Percentage (%)');
+    csvRows.push('Main Category,Sub Category,Empty Bin Weight (kg),Weight with Waste (kg),Net Weight (kg),Percentage (%)');
     
     dataReadings.forEach(reading => {
       const data = reading.readings;
@@ -158,7 +157,6 @@ const Index = () => {
       
       wasteBreakdown.forEach(category => {
         csvRows.push([
-          `"${data.sampleNumber || ''}"`,
           `"${category.primary || ''}"`,
           `"${category.secondary || ''}"`,
           category.emptyBin || 0,

@@ -38,7 +38,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
   // Dynamic bin count (start with 7 bins)
   const [binCount, setBinCount] = useState(7);
   const [binWeights, setBinWeights] = useState<number[]>(new Array(7).fill(0));
-  const [binVolumes, setBinVolumes] = useState<number[]>(new Array(7).fill(240));
+  const [binVolumes, setBinVolumes] = useState<number[]>(new Array(7).fill(1)); // Changed default from 240 to 1
   const [sortingWeights, setSortingWeights] = useState<number[]>(new Array(7).fill(0));
 
   // Waste categories with their specific items
@@ -111,7 +111,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
   const addBin = () => {
     setBinCount(prev => prev + 1);
     setBinWeights(prev => [...prev, 0]);
-    setBinVolumes(prev => [...prev, 240]);
+    setBinVolumes(prev => [...prev, 1]); // Changed default from 240 to 1
     setSortingWeights(prev => [...prev, 0]);
   };
 
@@ -226,7 +226,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
       
       // Bin data
       binWeights: binWeights.map(w => w || 0),
-      binVolumes: binVolumes.map(v => v || 240),
+      binVolumes: binVolumes.map(v => v || 1),
       binAverages: {
         weight: getBinAverage(binWeights),
         volume: getBinAverage(binVolumes),
@@ -274,7 +274,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     setVehicleType('');
     setBinCount(7);
     setBinWeights(new Array(7).fill(0));
-    setBinVolumes(new Array(7).fill(240));
+    setBinVolumes(new Array(7).fill(1)); // Changed default from 240 to 1
     setSortingWeights(new Array(7).fill(0));
     setWasteCategories(prev => prev.map(cat => ({ ...cat, emptyBin: 0, weightWithWaste: 0 })));
     setRemarks('');
@@ -468,10 +468,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                         value={volume || ''}
                         onChange={(e) => {
                           const newVolumes = [...binVolumes];
-                          newVolumes[index] = parseFloat(e.target.value) || 240;
+                          newVolumes[index] = parseFloat(e.target.value) || 0;
                           setBinVolumes(newVolumes);
                         }}
-                        placeholder="240.00"
+                        onBlur={(e) => {
+                          // Check if volume is valid after user finishes editing
+                          const value = parseFloat(e.target.value);
+                          if (value <= 0) {
+                            const newVolumes = [...binVolumes];
+                            newVolumes[index] = 1; // Reset to default if invalid
+                            setBinVolumes(newVolumes);
+                          }
+                        }}
+                        placeholder="1.00"
                         className="h-8 text-sm"
                       />
                     </div>
