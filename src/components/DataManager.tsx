@@ -6,18 +6,130 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, Search, Calendar, MapPin, User } from "lucide-react";
+import { Trash2, Search, Calendar, MapPin, User, Download, Edit } from "lucide-react";
 import { DataReading } from "@/pages/Index";
+import { useToast } from "@/hooks/use-toast";
 
 interface DataManagerProps {
   dataReadings: DataReading[];
   fields: string[];
   onDelete: (id: string) => void;
+  onEdit: (reading: DataReading) => void;
 }
 
-export const DataManager: React.FC<DataManagerProps> = ({ dataReadings, fields, onDelete }) => {
+export const DataManager: React.FC<DataManagerProps> = ({ dataReadings, fields, onDelete, onEdit }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'timestamp' | 'location' | 'operator'>('timestamp');
+  const { toast } = useToast();
+
+  const exportSingleRecordToCSV = (reading: DataReading) => {
+    const csvRows = [];
+    const data = reading.readings;
+    
+    // Basic Information Headers
+    csvRows.push('BASIC INFORMATION');
+    csvRows.push('Timestamp,Sample Number,Date & Time,Vehicle Number,Manifest ID,Producer Name,Source District,Waste Type,Sample Weight (kg),Vehicle Type');
+    
+    csvRows.push([
+      `"${new Date(reading.timestamp).toLocaleString()}"`,
+      `"${data.sampleNumber || ''}"`,
+      `"${data.dateTime || ''}"`,
+      `"${data.vehicleNumber || ''}"`,
+      `"${data.manifestId || ''}"`,
+      `"${data.producerName || ''}"`,
+      `"${data.sourceDistrict || ''}"`,
+      `"${data.wasteType || ''}"`,
+      data.sampleWeight || 0,
+      `"${data.vehicleType || ''}"`
+    ].join(','));
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Bin Measurements Section
+    csvRows.push('BIN MEASUREMENTS');
+    csvRows.push('Bin Number,Weight (kg),Volume (m³),Bulk Density (kg/m³)');
+    
+    const binWeights = data.binWeights || [];
+    const binVolumes = data.binVolumes || [];
+    
+    binWeights.forEach((weight, index) => {
+      const volume = binVolumes[index] || 1;
+      const bulkDensity = volume > 0 ? (weight / volume).toFixed(2) : '0.00';
+      csvRows.push([
+        index + 1,
+        weight || 0,
+        volume,
+        bulkDensity
+      ].join(','));
+    });
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Sorting Sample Weights
+    csvRows.push('SORTING SAMPLE WEIGHTS');
+    csvRows.push('Sample 1,Sample 2,Sample 3,Sample 4,Sample 5,Sample 6,Sample 7,Additional Samples...,Total');
+    
+    const sortingWeights = data.sortingWeights || [];
+    const row = [];
+    
+    // Add all sorting weights
+    sortingWeights.forEach(weight => {
+      row.push(weight || 0);
+    });
+    
+    // Add total
+    row.push(data.sortingTotal || 0);
+    csvRows.push(row.join(','));
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Waste Category Breakdown
+    csvRows.push('WASTE CATEGORY BREAKDOWN');
+    csvRows.push('Main Category,Sub Category,Empty Bin Weight (kg),Weight with Waste (kg),Net Weight (kg),Percentage (%)');
+    
+    const wasteBreakdown = data.wasteBreakdown || [];
+    
+    wasteBreakdown.forEach(category => {
+      csvRows.push([
+        `"${category.primary || ''}"`,
+        `"${category.secondary || ''}"`,
+        category.emptyBin || 0,
+        category.weightWithWaste || 0,
+        category.netWeight || 0,
+        category.percentage || '0.00'
+      ].join(','));
+    });
+    
+    csvRows.push(''); // Empty row for separation
+    
+    // Summary Information
+    csvRows.push('SUMMARY CALCULATIONS');
+    csvRows.push('Sample Number,Sorting Sample Total (kg),Waste Category Total (kg),Sampling/Moisture Loss (kg),Percentage Loss (%),Remarks');
+    
+    csvRows.push([
+      `"${data.sampleNumber || ''}"`,
+      data.sortingTotal || 0,
+      data.totalWeight || 0,
+      data.samplingMoistureLoss || 0,
+      data.percentageLoss || '0.00',
+      `"${data.remarks || ''}"`
+    ].join(','));
+
+    // Create and download CSV file
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `waste-audit-${data.sampleNumber || 'record'}-${new Date(reading.timestamp).toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Complete",
+      description: "Individual waste audit record has been exported to CSV file.",
+    });
+  };
 
   const filteredReadings = dataReadings.filter(reading => {
     const searchLower = searchTerm.toLowerCase();
@@ -108,7 +220,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ dataReadings, fields, 
       {/* Readings List */}
       <div className="space-y-4">
         {sortedReadings.map((reading) => (
-          <Card key={reading.id} className="hover:shadow-md transition-shadow">
+          <Card key={reading.id} className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -130,34 +242,65 @@ export const DataManager: React.FC<DataManagerProps> = ({ dataReadings, fields, 
                   )}
                 </div>
                 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Reading</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this reading? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={() => onDelete(reading.id)}
-                        className="bg-red-500 hover:bg-red-600"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exportSingleRecordToCSV(reading);
+                    }}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(reading);
+                    }}
+                    className="text-green-500 hover:text-green-700"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-red-500 hover:text-red-700"
                       >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Reading</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this reading? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => onDelete(reading.id)}
+                          className="bg-red-500 hover:bg-red-600"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </CardHeader>
             
-            <CardContent className="pt-0">
+            <CardContent className="pt-0" onClick={() => onEdit(reading)}>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {fields.map((field) => (
                   <div key={field} className="bg-gray-50 p-3 rounded-lg">
