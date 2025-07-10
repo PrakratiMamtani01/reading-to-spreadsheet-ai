@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,14 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataEntryForm } from "@/components/DataEntryForm";
 import { DataManager } from "@/components/DataManager";
 import { useToast } from "@/hooks/use-toast";
-
-export interface DataReading {
-  id: string;
-  timestamp: string;
-  location?: string;
-  operator?: string;
-  readings: { [key: string]: string | number | any };
-}
+import { DataReading } from "@/types/index";
 
 const Index = () => {
   const [dataReadings, setDataReadings] = useState<DataReading[]>([]);
