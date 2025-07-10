@@ -95,6 +95,11 @@ const Index = () => {
     setActiveTab("entry");
   };
 
+  const handleCancelEdit = () => {
+    setEditingReading(null);
+    setActiveTab("manage");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-2">
       <div className="max-w-4xl mx-auto">
@@ -111,7 +116,7 @@ const Index = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="entry" className="text-sm py-2">
-                  {editingReading ? 'Edit Record' : 'Waste Audit Entry'}
+                  {editingReading ? 'Edit Record' : 'Enter New Data'}
                 </TabsTrigger>
                 <TabsTrigger value="manage" className="text-sm py-2">
                   Records ({dataReadings.length})
@@ -124,10 +129,7 @@ const Index = () => {
                   setFields={setFields}
                   onSubmit={editingReading ? updateDataReading : addDataReading}
                   editingData={editingReading}
-                  onCancelEdit={() => {
-                    setEditingReading(null);
-                    setActiveTab("manage");
-                  }}
+                  onCancelEdit={handleCancelEdit}
                 />
               </TabsContent>
               

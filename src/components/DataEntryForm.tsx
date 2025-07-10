@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ interface DataEntryFormProps {
   fields: string[];
   setFields: (fields: string[]) => void;
   onSubmit: (reading: Omit<DataReading, 'id' | 'timestamp'>) => void;
+  editingData?: DataReading | null;
+  onCancelEdit?: () => void;
 }
 
 interface WasteCategory {
@@ -23,7 +25,13 @@ interface WasteCategory {
   binNumber?: number;
 }
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields, onSubmit }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ 
+  fields, 
+  setFields, 
+  onSubmit, 
+  editingData, 
+  onCancelEdit 
+}) => {
   // Basic Information
   const [sampleNumber, setSampleNumber] = useState('');
   const [dateTime, setDateTime] = useState(new Date().toISOString().slice(0, 16));
@@ -38,7 +46,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
   // Dynamic bin count (start with 7 bins)
   const [binCount, setBinCount] = useState(7);
   const [binWeights, setBinWeights] = useState<number[]>(new Array(7).fill(0));
-  const [binVolumes, setBinVolumes] = useState<number[]>(new Array(7).fill(1)); // Changed default from 240 to 1
+  const [binVolumes, setBinVolumes] = useState<number[]>(new Array(7).fill(1));
   const [sortingWeights, setSortingWeights] = useState<number[]>(new Array(7).fill(0));
 
   // Waste categories with their specific items
@@ -108,10 +116,53 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
   const [remarks, setRemarks] = useState('');
   const { toast } = useToast();
 
+  // Effect to populate form when editing
+  useEffect(() => {
+    if (editingData && editingData.readings) {
+      const data = editingData.readings;
+      
+      // Basic info
+      setSampleNumber(data.sampleNumber || '');
+      setDateTime(data.dateTime || new Date().toISOString().slice(0, 16));
+      setVehicleNumber(data.vehicleNumber || '');
+      setManifestId(data.manifestId || 'NA');
+      setProducerName(data.producerName || "bea'h \\ collection");
+      setSourceDistrict(data.sourceDistrict || '');
+      setWasteType(data.wasteType || 'Bin');
+      setSampleWeight(data.sampleWeight?.toString() || '');
+      setVehicleType(data.vehicleType || '');
+      
+      // Bin data
+      if (data.binWeights && Array.isArray(data.binWeights)) {
+        setBinWeights(data.binWeights);
+        setBinCount(data.binWeights.length);
+      }
+      if (data.binVolumes && Array.isArray(data.binVolumes)) {
+        setBinVolumes(data.binVolumes);
+      }
+      if (data.sortingWeights && Array.isArray(data.sortingWeights)) {
+        setSortingWeights(data.sortingWeights);
+      }
+      
+      // Waste breakdown
+      if (data.wasteBreakdown && Array.isArray(data.wasteBreakdown)) {
+        setWasteCategories(data.wasteBreakdown.map(item => ({
+          primary: item.primary || '',
+          secondary: item.secondary || '',
+          emptyBin: item.emptyBin || 0,
+          weightWithWaste: item.weightWithWaste || 0,
+          binNumber: item.binNumber
+        })));
+      }
+      
+      setRemarks(data.remarks || '');
+    }
+  }, [editingData]);
+
   const addBin = () => {
     setBinCount(prev => prev + 1);
     setBinWeights(prev => [...prev, 0]);
-    setBinVolumes(prev => [...prev, 1]); // Changed default from 240 to 1
+    setBinVolumes(prev => [...prev, 1]);
     setSortingWeights(prev => [...prev, 0]);
   };
 
@@ -152,7 +203,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     setWasteCategories(newCategories);
   };
 
-  // New calculation functions for sampling/moisture loss
   const getSortingTotal = () => {
     return sortingWeights.reduce((a, b) => a + b, 0);
   };
@@ -167,7 +217,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     return sortingTotal > 0 ? (loss / sortingTotal * 100).toFixed(2) : '0.00';
   };
 
-  // New function to add custom waste category
   const addCustomWasteCategory = () => {
     if (!newCategoryPrimary.trim() || !newCategorySecondary.trim()) {
       toast({
@@ -260,9 +309,13 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     });
 
     toast({
-      title: "Waste Audit Data Saved",
-      description: `Sample ${sampleNumber} has been recorded successfully.`,
+      title: editingData ? "Waste Audit Data Updated" : "Waste Audit Data Saved",
+      description: `Sample ${sampleNumber} has been ${editingData ? 'updated' : 'recorded'} successfully.`,
     });
+
+    if (!editingData) {
+      clearForm();
+    }
   };
 
   const clearForm = () => {
@@ -274,7 +327,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     setVehicleType('');
     setBinCount(7);
     setBinWeights(new Array(7).fill(0));
-    setBinVolumes(new Array(7).fill(1)); // Changed default from 240 to 1
+    setBinVolumes(new Array(7).fill(1));
     setSortingWeights(new Array(7).fill(0));
     setWasteCategories(prev => prev.map(cat => ({ ...cat, emptyBin: 0, weightWithWaste: 0 })));
     setRemarks('');
@@ -287,7 +340,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg text-center">Waste Collection Data Entry</CardTitle>
+          <CardTitle className="text-lg text-center">
+            {editingData ? 'Edit Waste Collection Data' : 'Waste Collection Data Entry'}
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -472,11 +527,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                           setBinVolumes(newVolumes);
                         }}
                         onBlur={(e) => {
-                          // Check if volume is valid after user finishes editing
                           const value = parseFloat(e.target.value);
                           if (value <= 0) {
                             const newVolumes = [...binVolumes];
-                            newVolumes[index] = 1; // Reset to default if invalid
+                            newVolumes[index] = 1;
                             setBinVolumes(newVolumes);
                           }
                         }}
@@ -560,7 +614,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
             <Separator />
 
-            {/* Waste Category Breakdown - Updated without bin number tags */}
+            {/* Waste Category Breakdown */}
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
@@ -646,7 +700,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                               <div className="text-sm font-medium">{netWeight.toFixed(2)} kg</div>
                               <div className="text-xs text-gray-500">{percentage}%</div>
                             </div>
-                            {index >= 32 && ( // Only show remove button for custom categories
+                            {index >= 32 && (
                               <Button
                                 type="button"
                                 onClick={() => removeWasteCategory(index)}
@@ -692,12 +746,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
             <Separator />
 
-            {/* Updated Sampling/Moisture Loss Section */}
+            {/* Sampling/Moisture Loss Section */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold text-orange-600">Sampling/Moisture Loss</h3>
               <Card className="p-4 bg-orange-50 border-orange-200">
                 <div className="space-y-4">
-                  {/* First Row: Totals */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="text-center">
                       <div className="text-xs text-gray-600 mb-1">Sorting Sample Total</div>
@@ -709,7 +762,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
                     </div>
                   </div>
                   
-                  {/* Second Row: Loss and Percentage */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="text-center">
                       <div className="text-xs text-gray-600 mb-1">Sampling/Moisture Loss</div>
@@ -744,22 +796,35 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields,
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
-              <Button 
-                type="button"
-                onClick={clearForm}
-                variant="outline"
-                className="flex items-center justify-center gap-2 w-full sm:w-auto"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear Form
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  type="button"
+                  onClick={clearForm}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear Form
+                </Button>
+                
+                {editingData && onCancelEdit && (
+                  <Button 
+                    type="button"
+                    onClick={onCancelEdit}
+                    variant="outline"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    Cancel Edit
+                  </Button>
+                )}
+              </div>
               
               <Button 
                 type="submit"
                 className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Save className="w-4 h-4" />
-                Save Waste Audit Data
+                {editingData ? 'Update Waste Audit Data' : 'Save Waste Audit Data'}
               </Button>
             </div>
           </form>
