@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DataReading } from "@/types";
+import { DataReading } from "@/types/index";
 
 interface DataEntryFormProps {
   fields: string[];
