@@ -227,27 +227,98 @@ export const DataManager: React.FC<DataManagerProps> = ({ dataReadings, fields, 
         {sortedReadings.map((reading) => (
           <Card key={reading.id} className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
                   <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {new Date(reading.timestamp).toLocaleString()}
+                    <Calendar className="w-4 h-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">{new Date(reading.timestamp).toLocaleString()}</span>
                   </div>
-                  {reading.location && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {reading.location}
-                    </Badge>
-                  )}
-                  {reading.operator && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {reading.operator}
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {reading.location && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate">{reading.location}</span>
+                      </Badge>
+                    )}
+                    {reading.operator && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        <span className="truncate">{reading.operator}</span>
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                {/* Mobile: Use dropdown menu for actions */}
+                <div className="flex items-center gap-2 sm:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-8 w-8 p-0"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportSingleRecordToCSV(reading);
+                        }}
+                        className="text-blue-600"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(reading);
+                        }}
+                        className="text-green-600"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Record
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-red-600"
+                      >
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <div className="flex items-center w-full">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Record
+                            </div>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Reading</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this reading? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => onDelete(reading.id)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Desktop: Show individual buttons */}
+                <div className="hidden sm:flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
