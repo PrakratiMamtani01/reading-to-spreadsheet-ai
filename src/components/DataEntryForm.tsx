@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,14 +7,12 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DataReading } from "@/types/index";
+import { DataReading } from "@/pages/Index";
 
 interface DataEntryFormProps {
   fields: string[];
   setFields: (fields: string[]) => void;
   onSubmit: (reading: Omit<DataReading, 'id' | 'timestamp'>) => void;
-  editingData?: DataReading | null;
-  onCancelEdit?: () => void;
 }
 
 interface WasteCategory {
@@ -25,13 +23,7 @@ interface WasteCategory {
   binNumber?: number;
 }
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ 
-  fields, 
-  setFields, 
-  onSubmit, 
-  editingData = null, 
-  onCancelEdit 
-}) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ fields, setFields, onSubmit }) => {
   // Basic Information
   const [sampleNumber, setSampleNumber] = useState('');
   const [dateTime, setDateTime] = useState(new Date().toISOString().slice(0, 16));
@@ -115,43 +107,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
 
   const [remarks, setRemarks] = useState('');
   const { toast } = useToast();
-
-  // Effect to populate form when editing
-  useEffect(() => {
-    if (editingData) {
-      const readings = editingData.readings;
-      setSampleNumber(readings.sampleNumber || '');
-      setDateTime(readings.dateTime || new Date().toISOString().slice(0, 16));
-      setVehicleNumber(readings.vehicleNumber || '');
-      setManifestId(readings.manifestId || 'NA');
-      setProducerName(readings.producerName || "bea'h \\ collection");
-      setSourceDistrict(readings.sourceDistrict || '');
-      setWasteType(readings.wasteType || 'Bin');
-      setSampleWeight(readings.sampleWeight?.toString() || '');
-      setVehicleType(readings.vehicleType || '');
-      
-      if (readings.binWeights) {
-        setBinWeights(readings.binWeights);
-        setBinCount(readings.binWeights.length);
-      }
-      if (readings.binVolumes) {
-        setBinVolumes(readings.binVolumes);
-      }
-      if (readings.sortingWeights) {
-        setSortingWeights(readings.sortingWeights);
-      }
-      if (readings.wasteBreakdown) {
-        setWasteCategories(readings.wasteBreakdown.map((item: any) => ({
-          primary: item.primary,
-          secondary: item.secondary,
-          emptyBin: item.emptyBin,
-          weightWithWaste: item.weightWithWaste,
-          binNumber: item.binNumber
-        })));
-      }
-      setRemarks(readings.remarks || '');
-    }
-  }, [editingData]);
 
   const addBin = () => {
     setBinCount(prev => prev + 1);
@@ -304,12 +259,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
       readings: processedData
     });
 
-    if (!editingData) {
-      toast({
-        title: "Waste Audit Data Saved",
-        description: `Sample ${sampleNumber} has been recorded successfully.`,
-      });
-    }
+    toast({
+      title: "Waste Audit Data Saved",
+      description: `Sample ${sampleNumber} has been recorded successfully.`,
+    });
   };
 
   const clearForm = () => {
@@ -334,21 +287,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg text-center flex-1">
-              {editingData ? 'Edit Waste Audit Record' : 'Waste Collection Data Entry'}
-            </CardTitle>
-            {editingData && onCancelEdit && (
-              <Button 
-                type="button"
-                onClick={onCancelEdit}
-                variant="outline"
-                size="sm"
-              >
-                Cancel Edit
-              </Button>
-            )}
-          </div>
+          <CardTitle className="text-lg text-center">Waste Collection Data Entry</CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -820,7 +759,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({
                 className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Save className="w-4 h-4" />
-                {editingData ? 'Update Waste Audit Data' : 'Save Waste Audit Data'}
+                Save Waste Audit Data
               </Button>
             </div>
           </form>
