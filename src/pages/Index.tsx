@@ -55,7 +55,7 @@ const Index = () => {
     setDataReadings(prev => [newReading, ...prev]);
 
     try {
-      const response = await fetch('http://localhost:5001/api/readings', {
+      const response = await fetch('https://reading-to-spreadsheet-ai.onrender.com/api/readings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReading),
@@ -89,7 +89,7 @@ const Index = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5001/api/readings/${updated.id}`, {
+      const response = await fetch(`https://reading-to-spreadsheet-ai.onrender.com/api/readings/${updated.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
@@ -124,7 +124,7 @@ const Index = () => {
     setDataReadings(prev => prev.filter(reading => reading.id !== id));
 
     try {
-      const response = await fetch(`http://localhost:5001/api/readings/${id}`, {
+      const response = await fetch(`https://reading-to-spreadsheet-ai.onrender.com/api/readings/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -162,7 +162,7 @@ const Index = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/readings');
+      const response = await fetch('https://reading-to-spreadsheet-ai.onrender.com/api/readings');
       if (!response.ok) {
         throw new Error('Failed to fetch from MongoDB');
       }
