@@ -26,7 +26,7 @@ const Index = () => {
   useEffect(() => {
     const savedData = localStorage.getItem('wasteAuditData');
     const savedFields = localStorage.getItem('wasteAuditFields');
-    
+
     if (savedData) {
       setDataReadings(JSON.parse(savedData));
     }
@@ -45,45 +45,105 @@ const Index = () => {
     localStorage.setItem('wasteAuditFields', JSON.stringify(fields));
   }, [fields]);
 
-  const addDataReading = (reading: Omit<DataReading, 'id' | 'timestamp'>) => {
+  const addDataReading = async (reading: Omit<DataReading, 'id' | 'timestamp'>) => {
     const newReading: DataReading = {
       ...reading,
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
     };
-    
+
     setDataReadings(prev => [newReading, ...prev]);
-    
-    toast({
-      title: "Waste Audit Recorded",
-      description: "Waste collection data has been successfully saved.",
-    });
+
+    try {
+      const response = await fetch('http://localhost:5001/api/readings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReading),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save to MongoDB');
+      }
+
+      toast({
+        title: "Waste Audit Recorded",
+        description: "Waste collection data saved to MongoDB!",
+      });
+
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Could not save to MongoDB.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const updateDataReading = (updatedReading: Omit<DataReading, 'id' | 'timestamp'>) => {
+  const updateDataReading = async (updatedReading: Omit<DataReading, 'id' | 'timestamp'>) => {
     if (!editingReading) return;
-    
+
     const updated: DataReading = {
       ...editingReading,
       ...updatedReading,
     };
-    
-    setDataReadings(prev => prev.map(reading => 
+
+    try {
+      const response = await fetch(`http://localhost:5001/api/readings/${updated.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update on MongoDB');
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Could not update on MongoDB.",
+        variant: "destructive",
+      });
+    }
+
+    setDataReadings(prev => prev.map(reading =>
       reading.id === editingReading.id ? updated : reading
     ));
-    
+
     setEditingReading(null);
     setActiveTab("manage");
-    
+
     toast({
       title: "Record Updated",
       description: "Waste audit data has been successfully updated.",
     });
   };
 
-  const deleteReading = (id: string) => {
+  const deleteReading = async (id: string) => {
     setDataReadings(prev => prev.filter(reading => reading.id !== id));
-    
+
+    try {
+      const response = await fetch(`http://localhost:5001/api/readings/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete from MongoDB');
+      }
+      setDataReadings(prev => prev.filter(reading => reading.id !== id));
+      toast({
+        title: "Record Deleted",
+        description: "Waste audit data has been removed.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Could not delete from MongoDB.",
+        variant: "destructive",
+      });
+    }
+
     toast({
       title: "Record Deleted",
       description: "Waste audit data has been removed.",
@@ -100,6 +160,24 @@ const Index = () => {
     setActiveTab("manage");
   };
 
+  const fetchData = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/readings');
+      if (!response.ok) {
+        throw new Error('Failed to fetch from MongoDB');
+      }
+      const data = await response.json();
+      setDataReadings(data);
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Could not load records from MongoDB.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-2">
       <div className="max-w-4xl mx-auto">
@@ -113,7 +191,15 @@ const Index = () => {
             </div>
           </CardHeader>
           <CardContent className="p-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab}
+              onValueChange={(tab) => {
+                setActiveTab(tab);
+                if (tab === 'manage') {
+                  fetchData();
+                }
+              }}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="entry" className="text-sm py-2">
                   {editingReading ? 'Edit Record' : 'Enter New Data'}
@@ -122,9 +208,9 @@ const Index = () => {
                   Records ({dataReadings.length})
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="entry" className="space-y-4">
-                <DataEntryForm 
+                <DataEntryForm
                   fields={fields}
                   setFields={setFields}
                   onSubmit={editingReading ? updateDataReading : addDataReading}
@@ -132,9 +218,9 @@ const Index = () => {
                   onCancelEdit={handleCancelEdit}
                 />
               </TabsContent>
-              
+
               <TabsContent value="manage" className="space-y-4">
-                <DataManager 
+                <DataManager
                   dataReadings={dataReadings}
                   fields={fields}
                   onDelete={deleteReading}
